@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Porsche 911 GT3 RS - Real 3D Experience</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050507; font-family: sans-serif; }
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
+        
+        .glass-panel {
+            background: rgba(15, 15, 20, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .neon-btn { transition: all 0.3s ease; }
+        .neon-btn.cyan:hover { box-shadow: 0 0 15px #00f3ff; border-color: #00f3ff; }
+        .neon-btn.red:hover { box-shadow: 0 0 15px #ff003c; border-color: #ff003c; }
+
+        #loader {
+            position: fixed; inset: 0; background: #050507; z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white; transition: opacity 0.5s ease;
+        }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body class="text-white select-none">
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <h1 class="text-2xl tracking-[0.3em] font-bold mb-4 uppercase">Porsche</h1>
+        <p id="loading-text" class="text-sm text-[#00f3ff]">Loading Real Model... 0%</p>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <!-- Top Navbar -->
+    <nav class="fixed top-0 w-full glass-panel flex justify-between items-center px-8 py-4 z-10">
+        <div class="text-xl font-bold tracking-[0.2em]">PORSCHE</div>
+        <div class="hidden md:flex gap-8 text-sm tracking-wider text-gray-300">
+            <a href="#" class="hover:text-[#00f3ff] transition text-white">GT3 RS</a>
+            <a href="#" class="hover:text-white transition">MODELS</a>
+        </div>
+    </nav>
+
+    <!-- Specs HUD -->
+    <div class="fixed left-4 top-1/2 -translate-y-1/2 glass-panel p-6 rounded-xl w-48 md:w-64 z-10">
+        <h3 class="text-gray-400 text-xs tracking-widest mb-6 border-b border-gray-600 pb-2">SPEC HUD</h3>
+        <div class="mb-4">
+            <p class="text-[10px] text-[#00f3ff] font-bold tracking-wider mb-1">TOP SPEED</p>
+            <p class="text-xl md:text-2xl font-light">296 <span class="text-sm text-gray-400">km/h</span></p>
+        </div>
+        <div class="mb-4">
+            <p class="text-[10px] text-[#00f3ff] font-bold tracking-wider mb-1">POWER</p>
+            <p class="text-xl md:text-2xl font-light">525 <span class="text-sm text-gray-400">PS</span></p>
+        </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="fixed bottom-8 w-full flex flex-col items-center z-10 pointer-events-none">
+        <div class="flex gap-4 mb-6 pointer-events-auto">
+            <button class="neon-btn cyan glass-panel px-6 py-3 rounded-full text-sm font-bold tracking-wider border border-white/20 hover:text-[#00f3ff]">
+                TEST DRIVE 3D
+            </button>
+        </div>
+        <p class="text-xs text-gray-400 tracking-widest bg-black/50 px-4 py-2 rounded-full">
+            👆 Swipe & Drag to Rotate
+        </p>
+    </div>
+
+    <!-- Three.js Engine -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // Scene & Camera
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050507, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(4.5, 2, 5.5);
+
+        // Renderer (iPad Optimized)
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(1); // Locked at 1 for max FPS on iPad
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const cyanRimLight = new THREE.DirectionalLight(0x00f3ff, 1.5);
+        cyanRimLight.position.set(-5, 3, -5);
+        scene.add(cyanRimLight);
+
+        const redGlow = new THREE.DirectionalLight(0xff003c, 1.5);
+        redGlow.position.set(5, -2, 5);
+        scene.add(redGlow);
+
+        const gridHelper = new THREE.GridHelper(20, 40, 0x222222, 0x0a0a0a);
+        gridHelper.position.y = -0.8;
+        scene.add(gridHelper);
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 3;
+        controls.maxDistance = 8;
+        controls.maxPolarAngle = Math.PI / 2; 
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+        controls.addEventListener('start', () => { controls.autoRotate = false; });
+
+        // Load Real Model
+        const loader = new GLTFLoader();
+        const loadingText = document.getElementById('loading-text');
+        const loaderScreen = document.getElementById('loader');
+
+        // YEH LINK DIRECTLY AAPKI UPLOAD KI HUI FILE KO READ KAREGA
+        const modelUrl = './porsche.glb'; 
+
+        loader.load(
+            modelUrl,
+            function (gltf) {
+                const car = gltf.scene;
+                
+                // Auto-scale & Center geometry
+                const box = new THREE.Box3().setFromObject(car);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 3.5 / maxDim;
+                
+                car.scale.set(scale, scale, scale);
+                car.position.set(-center.x * scale, (-center.y * scale) - 0.4, -center.z * scale);
+                
+                scene.add(car);
+                
+                // Hide Loader
+                loaderScreen.style.opacity = '0';
+                setTimeout(() => loaderScreen.style.display = 'none', 300);
+            },
+            function (xhr) {
+                const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                if(percent) loadingText.innerText = `Loading Real Model... ${percent}%`;
+            },
+            function (error) {
+                console.error('Error loading Porsche:', error);
+                loadingText.innerText = "Model (porsche.glb) not found in repo!";
+                loadingText.style.color = "#ff003c";
+            }
+        );
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+    </script>
+</body>
+</html>
